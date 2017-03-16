@@ -1,11 +1,11 @@
 /**
- *    _____ _____ _____ _____    __    _____ _____ _____ _____
- *   |   __|  |  |     |     |  |  |  |     |   __|     |     |
- *   |__   |  |  | | | |  |  |  |  |__|  |  |  |  |-   -|   --|
- *   |_____|_____|_|_|_|_____|  |_____|_____|_____|_____|_____|
- *
- *                UNICORNS AT WARP SPEED SINCE 2010
- *
+ * _____ _____ _____ _____    __    _____ _____ _____ _____
+ * |   __|  |  |     |     |  |  |  |     |   __|     |     |
+ * |__   |  |  | | | |  |  |  |  |__|  |  |  |  |-   -|   --|
+ * |_____|_____|_|_|_|_____|  |_____|_____|_____|_____|_____|
+ * <p>
+ * UNICORNS AT WARP SPEED SINCE 2010
+ * <p>
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -13,9 +13,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -26,7 +26,6 @@
 package com.sumologic.log4j.aggregation;
 
 import com.sumologic.log4j.queue.BufferWithEviction;
-
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.status.StatusLogger;
 
@@ -38,64 +37,74 @@ import java.util.List;
  *
  * @author Jose Muniz (jose@sumologic.com)
  */
-public abstract class BufferFlushingTask<In, Out> implements Runnable {
-    private static final Logger logger = StatusLogger.getLogger();
-    private long timeOfLastFlush = System.currentTimeMillis();
-    private BufferWithEviction<In> messageQueue;
+public abstract class BufferFlushingTask<In, Out> implements Runnable
+{
+  private static final Logger logger = StatusLogger.getLogger();
 
-    private boolean needsFlushing() {
-        long currentTime = System.currentTimeMillis();
-        long dateOfNextFlush = timeOfLastFlush + getMaxFlushInterval();
+  private final BufferWithEviction<In> messageQueue;
 
-        return (messageQueue.size() >= getMessagesPerRequest()) ||
-               (currentTime >= dateOfNextFlush);
+  private long timeOfLastFlush = System.currentTimeMillis();
+
+  private boolean needsFlushing()
+  {
+    final long currentTime = System.currentTimeMillis();
+    final long dateOfNextFlush = timeOfLastFlush + getMaxFlushInterval();
+
+    return (currentTime >= dateOfNextFlush) || (messageQueue.size() >= getMessagesPerRequest());
+  }
+
+  private void flushAndSend()
+  {
+    // Racy, but extra messages can be picked up next time around.
+    final int size = messageQueue.size();
+    List<In> messages = new ArrayList<In>(size);
+    messageQueue.drainTo(messages, size);
+
+    if (messages.size() > 0) {
+      logger.debug(String.format(
+          "%s - Flushing and sending out %d messages (%d messages left)",
+          new java.util.Date(),
+          messages.size(),
+          messageQueue.size()
+      ));
+      final Out body = aggregate(messages);
+      sendOut(body);
+      timeOfLastFlush = System.currentTimeMillis();
     }
-
-    private void flushAndSend() {
-        List<In> messages = new ArrayList<In>(messageQueue.size());
-        messageQueue.drainTo(messages);
-
-        if (messages.size() > 0) {
-            logger.debug(String.format("%s - Flushing and sending out %d messages (%d messages left)",
-                    new java.util.Date(),
-                    messages.size(),
-                    messageQueue.size()));
-            Out body = aggregate(messages);
-            sendOut(body, getName());
-            timeOfLastFlush = System.currentTimeMillis();
-        }
-    }
+  }
 
 
     /* Subclasses should define from here */
 
-    abstract protected long getMaxFlushInterval();
-    abstract protected long getMessagesPerRequest();
-    abstract protected String getName();
+  abstract protected long getMaxFlushInterval();
 
-    protected BufferFlushingTask(BufferWithEviction<In> messageQueue) {
-        this.messageQueue = messageQueue;
-    }
+  abstract protected long getMessagesPerRequest();
 
-    // Given the list of messages, aggregate them into a single Out object
-    abstract protected Out aggregate(List<In> messages);
-    // Send aggregated message out. Block until we've successfully sent it.
-    abstract protected void sendOut(Out body, String name);
+  protected BufferFlushingTask(BufferWithEviction<In> messageQueue)
+  {
+    this.messageQueue = messageQueue;
+  }
+
+  // Given the list of messages, aggregate them into a single Out object
+  abstract protected Out aggregate(List<In> messages);
+
+  // Send aggregated message out. Block until we've successfully sent it.
+  abstract protected void sendOut(Out body);
 
 
 
     /* Public interface */
 
-    @Override
-    public void run() {
-        if (needsFlushing()) {
-            try {
-                flushAndSend();
-            }
-            catch (Exception e) {
-                logger.warn("Exception while attempting to flush and send", e);
-            }
-        }
+  public void run()
+  {
+    if (needsFlushing()) {
+      try {
+        flushAndSend();
+      }
+      catch (Exception e) {
+        logger.warn("Exception while attempting to flush and send", e);
+      }
     }
+  }
 
 }

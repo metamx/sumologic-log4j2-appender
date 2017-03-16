@@ -1,11 +1,11 @@
 /**
- *    _____ _____ _____ _____    __    _____ _____ _____ _____
- *   |   __|  |  |     |     |  |  |  |     |   __|     |     |
- *   |__   |  |  | | | |  |  |  |  |__|  |  |  |  |-   -|   --|
- *   |_____|_____|_|_|_|_____|  |_____|_____|_____|_____|_____|
- *
- *                UNICORNS AT WARP SPEED SINCE 2010
- *
+ * _____ _____ _____ _____    __    _____ _____ _____ _____
+ * |   __|  |  |     |     |  |  |  |     |   __|     |     |
+ * |__   |  |  | | | |  |  |  |  |__|  |  |  |  |-   -|   --|
+ * |_____|_____|_|_|_|_____|  |_____|_____|_____|_____|_____|
+ * <p>
+ * UNICORNS AT WARP SPEED SINCE 2010
+ * <p>
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -13,9 +13,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -27,134 +27,120 @@ package com.sumologic.log4j.http;
 
 import org.apache.http.Consts;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.status.StatusLogger;
 
 import java.io.IOException;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author Jose Muniz (jose@sumologic.com)
  */
-public class SumoHttpSender {
-    private static final Logger logger = StatusLogger.getLogger();
 
-    private long retryInterval = 10000L;
+public class SumoHttpSender
+{
+  private static final Logger logger = StatusLogger.getLogger();
 
-    private volatile String url = null;
-    private volatile ProxySettings proxySettings = null;
+  private final long retryInterval;
+  private final String url;
+  private final CloseableHttpClient httpClient;
+  private final String name;
+  private final String host;
+  private final String category;
 
-    private int connectionTimeout = 1000;
-    private int socketTimeout = 60000;
-    private volatile CloseableHttpClient httpClient = null;
+  public SumoHttpSender(
+      long retryInterval,
+      String url,
+      CloseableHttpClient httpClient,
+      String name,
+      String host,
+      String category
+  )
+  {
+    this.retryInterval = retryInterval;
+    this.url = url;
+    this.httpClient = httpClient;
+    this.name = name;
+    this.host = host;
+    this.category = category;
+  }
 
-    public ProxySettings getProxySettings() {
-        return proxySettings;
-    }
+  public boolean isInitialized()
+  {
+    return httpClient != null;
+  }
 
-    public void setProxySettings(ProxySettings proxySettings) {
-        this.proxySettings = proxySettings;
-    }
+  public void send(String body)
+  {
+    keepTrying(body);
+  }
 
-    public void setRetryInterval(long retryInterval) {
-        this.retryInterval = retryInterval;
-    }
-
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
-    public void setConnectionTimeout(int connectionTimeout) {
-        this.connectionTimeout = connectionTimeout;
-    }
-
-    public void setSocketTimeout(int socketTimeout) {
-        this.socketTimeout = socketTimeout;
-    }
-
-    public boolean isInitialized() {
-        return httpClient != null;
-    }
-
-    public void init() {
-        RequestConfig requestConfig = RequestConfig.custom()
-                .setSocketTimeout(socketTimeout)
-                .setConnectTimeout(connectionTimeout)
-                .build();
-
-        HttpClientBuilder builder = HttpClients.custom()
-                .setConnectionManager(new PoolingHttpClientConnectionManager())
-                .setDefaultRequestConfig(requestConfig);
-
-        HttpProxySettingsCreator creator = new HttpProxySettingsCreator(proxySettings);
-        creator.configureProxySettings(builder);
-
-        httpClient = builder.build();
-    }
-
-    public void close() throws IOException {
-        httpClient.close();
-        httpClient = null;
-    }
-
-    public void send(String body, String name) {
-        keepTrying(body, name);
-    }
-
-    private void keepTrying(String body, String name) {
-        boolean success = false;
-        do {
-            try {
-                trySend(body, name);
-                success = true;
-            } catch (Exception e) {
-                try {
-                    Thread.sleep(retryInterval);
-                } catch (InterruptedException e1) {
-                    break;
-                }
-            }
-        } while (!success && !Thread.currentThread().isInterrupted());
-    }
-
-    private void trySend(String body, String name) throws IOException {
-        HttpPost post = null;
+  private void keepTrying(String body)
+  {
+    boolean success = false;
+    int nTry = 1;
+    do {
+      try {
+        trySend(body);
+        success = true;
+      }
+      catch (Exception e) {
+        // Exponential backoff with jitter
+        final double fuzzyMultiplier = Math.min(Math.max(1 + 0.2 * ThreadLocalRandom.current().nextGaussian(), 0), 2);
+        final long sleepMillis = (long) (Math.min(retryInterval * 100, retryInterval * Math.pow(2, nTry - 1))
+                                         * fuzzyMultiplier);
+        nTry += 1;
         try {
-            if (url == null)
-                throw new IOException("Unknown endpoint");
-
-            post = new HttpPost(url);
-            if (name != null) {
-                post.setHeader("X-Sumo-Name", name);
-            }
-            post.setEntity(new StringEntity(body, Consts.UTF_8));
-            HttpResponse response = httpClient.execute(post);
-            int statusCode = response.getStatusLine().getStatusCode();
-            if (statusCode != 200) {
-                logger.warn(String.format("Received HTTP error from Sumo Service: %d", statusCode));
-                // Not success. Only retry if status is unavailable.
-                if (statusCode == 503) {
-                    throw new IOException("Server unavailable");
-                }
-            }
-            //need to consume the body if you want to re-use the connection.
-            logger.debug("Successfully sent log request to Sumo Logic");
-            EntityUtils.consume(response.getEntity());
-        } catch (IOException e) {
-            logger.warn("Could not send log to Sumo Logic");
-            logger.debug("Reason:", e);
-            try {
-                post.abort();
-            } catch (Exception ignore) {
-            }
-            throw e;
+          Thread.sleep(sleepMillis);
         }
+        catch (InterruptedException e1) {
+          break;
+        }
+      }
+    } while (!success && !Thread.currentThread().isInterrupted());
+  }
+
+  private void trySend(String body) throws IOException
+  {
+    final HttpPost post = new HttpPost(url);
+    try {
+      if (name != null) {
+        post.setHeader("X-Sumo-Name", name);
+      }
+      if (host != null) {
+        post.setHeader("X-Sumo-Host", host);
+      }
+      if (category != null) {
+        post.setHeader("X-Sumo-Category", category);
+      }
+      post.setEntity(new StringEntity(body, Consts.UTF_8));
+      final HttpResponse response = httpClient.execute(post);
+      final int statusCode = response.getStatusLine().getStatusCode();
+      if (statusCode != 200) {
+        logger.warn(String.format("Received HTTP error from Sumo Service: %d", statusCode));
+        // Not success. Only retry if status is unavailable.
+        if (statusCode == 503) {
+          throw new IOException("Server unavailable");
+        }
+      }
+      //need to consume the body if you want to re-use the connection.
+      logger.debug("Successfully sent log request to Sumo Logic");
+      EntityUtils.consume(response.getEntity());
     }
+    catch (IOException e) {
+      logger.warn("Could not send log to Sumo Logic");
+      logger.debug("Reason:", e);
+      try {
+        post.abort();
+      }
+      catch (Exception e1) {
+        e.addSuppressed(e1);
+      }
+      throw e;
+    }
+  }
 }
