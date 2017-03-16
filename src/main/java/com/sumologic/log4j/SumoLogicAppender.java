@@ -32,7 +32,7 @@ import com.sumologic.log4j.http.ProxySettings;
 import com.sumologic.log4j.http.SumoHttpSender;
 import com.sumologic.log4j.queue.BufferWithEviction;
 import com.sumologic.log4j.queue.BufferWithFifoEviction;
-import com.sumologic.log4j.queue.CostBoundedConcurrentQueue;
+import org.apache.commons.codec.Charsets;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -78,7 +78,7 @@ public class SumoLogicAppender extends AbstractAppender
   private static final Logger logger = StatusLogger.getLogger();
 
 
-  private final BufferWithEviction<String> queue;
+  private final BufferWithEviction<byte[]> queue;
   private final SumoHttpSender sender;
   private final SumoBufferFlusher flusher;
   private final Filter filter;
@@ -98,15 +98,10 @@ public class SumoLogicAppender extends AbstractAppender
     this.filter = filter;
 
     // Initialize queue
-    queue = new BufferWithFifoEviction<String>(maxQueueSizeBytes, new CostBoundedConcurrentQueue.CostAssigner<String>()
-    {
-      @Override
-      public long cost(String e)
-      {
-        // Note: This is only an estimate for total byte usage, since in UTF-8 encoding,
-        // the size of one character may be > 1 byte.
-        return e.length();
-      }
+    queue = new BufferWithFifoEviction<byte[]>(maxQueueSizeBytes, e -> {
+      // Note: This is only an estimate for total byte usage, since in UTF-8 encoding,
+      // the size of one character may be > 1 byte.
+      return e.length;
     });
 
     final RequestConfig requestConfig = RequestConfig
@@ -229,8 +224,7 @@ public class SumoLogicAppender extends AbstractAppender
       return;
     }
 
-    final String message = new String(getLayout().toByteArray(event));
-    logger.debug("Sending messge to Sumo: %s", message);
+    final byte[] message = getLayout().toByteArray(event);
 
     try {
       queue.add(message);

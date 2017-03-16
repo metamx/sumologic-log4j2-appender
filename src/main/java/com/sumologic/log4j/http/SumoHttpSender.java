@@ -28,6 +28,7 @@ package com.sumologic.log4j.http;
 import org.apache.http.Consts;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
@@ -74,12 +75,12 @@ public class SumoHttpSender
     return httpClient != null;
   }
 
-  public void send(String body)
+  public void send(byte[] body)
   {
     keepTrying(body);
   }
 
-  private void keepTrying(String body)
+  private void keepTrying(byte[] body)
   {
     boolean success = false;
     int nTry = 1;
@@ -104,7 +105,7 @@ public class SumoHttpSender
     } while (!success && !Thread.currentThread().isInterrupted());
   }
 
-  private void trySend(String body) throws IOException
+  private void trySend(byte[] body) throws IOException
   {
     final HttpPost post = new HttpPost(url);
     try {
@@ -117,7 +118,7 @@ public class SumoHttpSender
       if (category != null) {
         post.setHeader("X-Sumo-Category", category);
       }
-      post.setEntity(new StringEntity(body, Consts.UTF_8));
+      post.setEntity(new ByteArrayEntity(body));
       final HttpResponse response = httpClient.execute(post);
       final int statusCode = response.getStatusLine().getStatusCode();
       if (statusCode != 200) {

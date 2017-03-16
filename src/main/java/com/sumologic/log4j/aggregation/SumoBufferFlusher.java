@@ -52,7 +52,7 @@ public class SumoBufferFlusher
       long maxFlushInterval,
       long maxFlushTimeoutMs,
       SumoHttpSender sender,
-      BufferWithEviction<String> buffer,
+      BufferWithEviction<byte[]> buffer,
       Logger logger
   )
   {
