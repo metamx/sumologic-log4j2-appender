@@ -27,6 +27,7 @@ package com.sumologic.log4j.http;
 
 import org.apache.http.Consts;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.entity.GzipCompressingEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.StringEntity;
@@ -118,7 +119,7 @@ public class SumoHttpSender
       if (category != null) {
         post.setHeader("X-Sumo-Category", category);
       }
-      post.setEntity(new ByteArrayEntity(body));
+      post.setEntity(new GzipCompressingEntity(new ByteArrayEntity(body)));
       final HttpResponse response = httpClient.execute(post);
       final int statusCode = response.getStatusLine().getStatusCode();
       if (statusCode != 200) {
