@@ -76,7 +76,7 @@ public abstract class BufferFlushingTask<In, Out> implements Runnable
   }
 
 
-    /* Subclasses should define from here */
+  /* Subclasses should define from here */
 
   abstract protected long getMaxFlushInterval();
 
@@ -95,8 +95,9 @@ public abstract class BufferFlushingTask<In, Out> implements Runnable
 
 
 
-    /* Public interface */
+  /* Public interface */
 
+  @Override
   public void run()
   {
     if (needsFlushing()) {
