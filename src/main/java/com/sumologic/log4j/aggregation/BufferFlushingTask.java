@@ -61,12 +61,14 @@ public abstract class BufferFlushingTask<In, Out> implements Runnable
     messageQueue.drainTo(messages, size);
 
     if (messages.size() > 0) {
-      logger.debug(String.format(
-          "%s - Flushing and sending out %d messages (%d messages left)",
-          new java.util.Date(),
-          messages.size(),
-          messageQueue.size()
-      ));
+      if(logger.isDebugEnabled()) {
+        logger.debug(String.format(
+            "%s - Flushing and sending out %d messages (%d messages left)",
+            new java.util.Date(),
+            messages.size(),
+            messageQueue.size()
+        ));
+      }
       final Out body = aggregate(messages);
       sendOut(body);
       timeOfLastFlush = System.currentTimeMillis();
