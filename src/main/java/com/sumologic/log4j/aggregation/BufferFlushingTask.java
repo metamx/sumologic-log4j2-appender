@@ -57,7 +57,7 @@ public abstract class BufferFlushingTask<In, Out> implements Runnable
   {
     // Racy, but extra messages can be picked up next time around.
     final int size = messageQueue.size();
-    List<In> messages = new ArrayList<In>(size);
+    final List<In> messages = new ArrayList<In>(size);
     messageQueue.drainTo(messages, size);
 
     if (messages.size() > 0) {
