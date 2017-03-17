@@ -36,6 +36,7 @@ import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Author: Jose Muniz (jose@sumologic.com)
@@ -52,7 +53,7 @@ public class AggregatingHttpHandler implements HttpHandler
   private String readRequestBody(HttpExchange httpExchange) throws IOException
   {
     StringBuilder content = new StringBuilder();
-    InputStreamReader is = new InputStreamReader(httpExchange.getRequestBody(), REQUEST_ENCODING);
+    InputStreamReader is = new InputStreamReader(new GZIPInputStream(httpExchange.getRequestBody()), REQUEST_ENCODING);
     int c;
     while ((c = is.read()) != -1) {
       content.append((char) c);
