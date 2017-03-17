@@ -102,8 +102,7 @@
   </dependencies>
 
   <scm>
-    <connection>scm:svn:http://svn.sonatype.org/spice/tags/sumologic-log4j2-appender-1.0</connection>
-    <developerConnection>scm:svn:https://svn.sonatype.org/spice/tags/sumologic-log4j2-appender-1.0</developerConnection>
-    <url>http://svn.sonatype.org/spice/tags/sumologic-log4j2-appender-1.0</url>
+    <url>https://github.com/metamx/sumologic-log4j2-appender.git</url>
+    <connection>scm:git:git@github.com:metamx/sumologic-log4j2-appender.git</connection>
   </scm>
 </project>
