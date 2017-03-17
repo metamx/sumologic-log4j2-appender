@@ -59,9 +59,9 @@
   </build>
 
   <parent>
-    <groupId>org.sonatype.oss</groupId>
+    <groupId>com.metamx</groupId>
     <artifactId>oss-parent</artifactId>
-    <version>7</version>
+    <version>3</version>
   </parent>
   <dependencies>
     <dependency>
