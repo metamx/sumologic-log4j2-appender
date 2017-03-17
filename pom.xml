@@ -57,11 +57,17 @@
       </plugin>
     </plugins>
   </build>
+  <distributionManagement>
+    <snapshotRepository>
+      <id>snapshots</id>
+      <url>https://metamx.artifactoryonline.com/metamx/libs-snapshots-local</url>
+    </snapshotRepository>
+  </distributionManagement>
 
   <parent>
-    <groupId>com.metamx</groupId>
+    <groupId>org.sonatype.oss</groupId>
     <artifactId>oss-parent</artifactId>
-    <version>3</version>
+    <version>7</version>
   </parent>
   <dependencies>
     <dependency>
