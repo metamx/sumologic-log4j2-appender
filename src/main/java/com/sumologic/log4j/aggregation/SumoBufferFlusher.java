@@ -28,11 +28,10 @@ package com.sumologic.log4j.aggregation;
 import com.sumologic.log4j.http.SumoBufferFlushingTask;
 import com.sumologic.log4j.http.SumoHttpSender;
 import com.sumologic.log4j.queue.BufferWithEviction;
-import org.apache.logging.log4j.Logger;
-
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.Logger;
 
 /**
  * @author Jose Muniz (jose@sumologic.com)

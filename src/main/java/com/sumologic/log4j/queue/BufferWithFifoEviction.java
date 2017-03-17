@@ -25,17 +25,15 @@
  */
 package com.sumologic.log4j.queue;
 
+import java.util.Collection;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.status.StatusLogger;
-
-import java.util.Collection;
-
 import static com.sumologic.log4j.queue.CostBoundedConcurrentQueue.CostAssigner;
 
 /**
  * Buffer for one concurrent producer and one concurrent consumer which takes members of
  * the queue in batches.
- *
+ * <p>
  * Author: Jose Muniz (jose@sumologic.com)
  * Date: 4/6/13
  * Time: 3:29 PM
@@ -69,7 +67,9 @@ public class BufferWithFifoEviction<T> extends BufferWithEviction<T>
 
   /**
    * Make room for inserting an element with cost <tt>cost</tt>
+   *
    * @param cost the desired cost to evict
+   *
    * @return true if eviction was successful, false otherwise.
    */
   protected boolean evict(long cost)

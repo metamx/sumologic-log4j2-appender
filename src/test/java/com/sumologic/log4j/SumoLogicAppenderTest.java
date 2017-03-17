@@ -33,11 +33,6 @@ import org.apache.logging.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.util.zip.GZIPInputStream;
-
 import static org.junit.Assert.assertEquals;
 
 /**

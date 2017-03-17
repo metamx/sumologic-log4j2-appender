@@ -32,8 +32,8 @@ import java.util.Collection;
  * element in the queue to ensure the new element can fit.
  *
  * @author Jose Muniz (jose@sumologic.com)
- * Date: 4/5/13
- * Time: 1:51 AM
+ *         Date: 4/5/13
+ *         Time: 1:51 AM
  */
 public abstract class BufferWithEviction<Q>
 {

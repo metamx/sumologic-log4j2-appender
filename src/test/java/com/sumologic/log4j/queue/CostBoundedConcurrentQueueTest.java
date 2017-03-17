@@ -25,11 +25,9 @@
  */
 package com.sumologic.log4j.queue;
 
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.List;
-
+import org.junit.Test;
 import static com.sumologic.log4j.queue.CostBoundedConcurrentQueue.CostAssigner;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

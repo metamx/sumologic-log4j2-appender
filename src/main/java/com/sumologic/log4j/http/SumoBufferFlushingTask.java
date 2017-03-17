@@ -27,11 +27,10 @@ package com.sumologic.log4j.http;
 
 import com.sumologic.log4j.aggregation.BufferFlushingTask;
 import com.sumologic.log4j.queue.BufferWithEviction;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.status.StatusLogger;
-
 import java.nio.ByteBuffer;
 import java.util.List;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.status.StatusLogger;
 
 /**
  * @author Jose Muniz (jose@sumologic.com)

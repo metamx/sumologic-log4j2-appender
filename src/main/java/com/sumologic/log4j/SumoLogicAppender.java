@@ -32,7 +32,9 @@ import com.sumologic.log4j.http.ProxySettings;
 import com.sumologic.log4j.http.SumoHttpSender;
 import com.sumologic.log4j.queue.BufferWithEviction;
 import com.sumologic.log4j.queue.BufferWithFifoEviction;
-import org.apache.commons.codec.Charsets;
+import java.io.Serializable;
+import java.lang.management.ManagementFactory;
+import java.util.Optional;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -49,10 +51,6 @@ import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.apache.logging.log4j.status.StatusLogger;
-
-import java.io.Serializable;
-import java.lang.management.ManagementFactory;
-import java.util.Optional;
 
 /**
  * Log4J 2 Appender that sends log messages to Sumo Logic.

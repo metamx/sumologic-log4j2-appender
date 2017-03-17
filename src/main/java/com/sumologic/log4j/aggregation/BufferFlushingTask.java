@@ -26,11 +26,10 @@
 package com.sumologic.log4j.aggregation;
 
 import com.sumologic.log4j.queue.BufferWithEviction;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.status.StatusLogger;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.status.StatusLogger;
 
 /**
  * Task to perform a single flushing check
@@ -61,7 +60,7 @@ public abstract class BufferFlushingTask<In, Out> implements Runnable
     messageQueue.drainTo(messages, size);
 
     if (messages.size() > 0) {
-      if(logger.isDebugEnabled()) {
+      if (logger.isDebugEnabled()) {
         logger.debug(String.format(
             "%s - Flushing and sending out %d messages (%d messages left)",
             new java.util.Date(),

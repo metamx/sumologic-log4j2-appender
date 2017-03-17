@@ -25,19 +25,16 @@
  */
 package com.sumologic.log4j.http;
 
-import org.apache.http.Consts;
+import java.io.IOException;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.entity.GzipCompressingEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.status.StatusLogger;
-
-import java.io.IOException;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author Jose Muniz (jose@sumologic.com)
