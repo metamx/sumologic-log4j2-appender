@@ -62,6 +62,10 @@
       <id>snapshots</id>
       <url>https://metamx.artifactoryonline.com/metamx/libs-snapshots-local</url>
     </snapshotRepository>
+    <repository>
+      <id>central-local</id>
+      <url></url>
+    </repository>
   </distributionManagement>
 
   <parent>
