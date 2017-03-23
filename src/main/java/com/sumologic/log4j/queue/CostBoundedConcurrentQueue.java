@@ -39,12 +39,9 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class CostBoundedConcurrentQueue<T>
 {
-
-  private static final int MAX_BATCH = 1024;
-
-  public static interface CostAssigner<T>
+  public interface CostAssigner<T>
   {
-    public long cost(T e);
+    long cost(T e);
   }
 
   private final LinkedTransferQueue<T> queue;
