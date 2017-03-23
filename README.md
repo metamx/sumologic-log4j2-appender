@@ -10,7 +10,7 @@ The `SumoLogicAppender` is a log4j2 appender that utilizes a SumoLogic HTTP Coll
 
 The library can be added to your project using Maven Central by adding the following dependency to a POM file:
 
-```
+```xml
 <dependency>
     <groupId>com.sumologic.plugins.log4j</groupId>
     <artifactId>sumologic-log4j2-appender</artifactId>
