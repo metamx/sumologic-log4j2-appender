@@ -27,7 +27,8 @@ package com.sumologic.log4j.queue;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -44,7 +45,10 @@ public class CostBoundedConcurrentQueue<T>
     long cost(T e);
   }
 
-  private final LinkedTransferQueue<T> queue;
+  // Right now this does a queue of byte arrays.
+  // It would be nice if this could ultimately just hold a ByteBuffer,
+  // but memory guarantees around ByteBuffers are not strong :(
+  private final BlockingQueue<T> queue;
   private final CostAssigner<T> costAssigner;
   private final AtomicLong cost = new AtomicLong(0);
 
@@ -53,7 +57,7 @@ public class CostBoundedConcurrentQueue<T>
 
   public CostBoundedConcurrentQueue(long capacity, CostAssigner<T> costAssigner)
   {
-    this.queue = new LinkedTransferQueue<T>();
+    this.queue = new LinkedBlockingQueue<T>();
     this.costAssigner = costAssigner;
     this.capacity = capacity;
   }
