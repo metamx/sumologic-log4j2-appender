@@ -100,7 +100,7 @@ public class SumoHttpSender
           break;
         }
       }
-    } while (!success && !Thread.currentThread().isInterrupted());
+    } while (!success && !Thread.currentThread().isInterrupted() && nTry < 5);
   }
 
   private void trySend(byte[] body) throws IOException
