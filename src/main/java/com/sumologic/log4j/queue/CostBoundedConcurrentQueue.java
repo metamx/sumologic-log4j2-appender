@@ -25,6 +25,7 @@
  */
 package com.sumologic.log4j.queue;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -89,12 +90,13 @@ public class CostBoundedConcurrentQueue<T>
    */
   public int drainTo(Collection<T> collection, int max)
   {
-    assert collection.isEmpty();
+    final Collection<T> intermediary = new ArrayList<>(max);
 
-    int elementsDrained = queue.drainTo(collection, max);
-    for (T e : collection) {
+    final int elementsDrained = queue.drainTo(intermediary, max);
+    for (T e : intermediary) {
       cost.addAndGet(-costAssigner.cost(e));
     }
+    collection.addAll(intermediary);
 
     return elementsDrained;
   }
