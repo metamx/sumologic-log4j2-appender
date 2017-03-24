@@ -75,7 +75,7 @@ The specific changes it has compared to the standard JSON layout are as follows:
 * `endOfBatch` is ignord
 * `loggerFqcn` is ignored
 * Charset is always `UTF-8`
-* The output is alwasy compact
+* The output is always compact
 * The output always ends with a newline `'\n'`
 * The output always includes thread context map (MDC) if any such map exists, otherwise omits it from the log
 
