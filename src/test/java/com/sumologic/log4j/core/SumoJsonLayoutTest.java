@@ -17,18 +17,25 @@
 
 package com.sumologic.log4j.core;
 
+import com.fasterxml.jackson.databind.ObjectWriter;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.codec.Charsets;
 import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.MarkerManager;
 import org.apache.logging.log4j.ThreadContext;
 import org.apache.logging.log4j.core.BasicConfigurationFactory;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.ConfigurationFactory;
 import org.apache.logging.log4j.core.impl.Log4jLogEvent;
+import org.apache.logging.log4j.core.impl.ThrowableProxy;
+import org.apache.logging.log4j.core.util.StringBuilderWriter;
 import org.apache.logging.log4j.message.SimpleMessage;
 import org.apache.logging.log4j.spi.MutableThreadContextStack;
+import org.apache.logging.log4j.util.Strings;
+import org.easymock.EasyMock;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -151,6 +158,67 @@ public class SumoJsonLayoutTest
         .build();
     final String jsonString = "{\"timestamp\":12345,\"thread\":\"some thread\",\"level\":\"ERROR\",\"loggerName\":\"some name\",\"message\":\"some message\",\"thrown\":{\"commonElementCount\":0,\"localizedMessage\":\"test exception\",\"message\":\"test exception\",\"name\":\"java.lang.RuntimeException\",\"extendedStackTrace\":[{\"class\":\"class\",\"method\":\"method\",\"file\":\"file\",\"line\":10,\"exact\":false,\"location\":\"?\",\"version\":\"?\"}]}}\n";
     Assert.assertEquals(jsonString, sumoJsonLayout.toSerializable(logEvent));
+  }
+
+  @Test
+  public void testSerializeHandlesErrorCorrectly() throws Exception
+  {
+    final ObjectWriter writer = EasyMock.createStrictMock(ObjectWriter.class);
+    final LogEvent event = Log4jLogEvent.newBuilder().build();
+    final IOException ioe = new IOException("some exception");
+    writer.writeValue(EasyMock.<StringBuilderWriter>anyObject(), EasyMock.eq(event));
+    EasyMock.expectLastCall().andThrow(ioe).once();
+    EasyMock.replay(writer);
+    final SumoJsonLayout sumoJsonLayout = new SumoJsonLayout(writer)
+    {
+      @Override
+      LogEvent wrap(LogEvent event)
+      {
+        return event;
+      }
+    };
+    Assert.assertEquals(Strings.EMPTY, sumoJsonLayout.toSerializable(event));
+    EasyMock.verify(writer);
+  }
+
+  @Test
+  public void testSumoWrapper()
+  {
+    final Map<String, String> map = new HashMap<>();
+    map.put("foo", "bar");
+    final LogEvent logEvent = Log4jLogEvent
+        .newBuilder()
+        .setContextMap(map)
+        .setSource(buildSte())
+        .setThrown(new RuntimeException())
+        .setThrownProxy(new ThrowableProxy(new RuntimeException()))
+        .setIncludeLocation(true)
+        .setContextStack(new MutableThreadContextStack())
+        .setTimeMillis(1234)
+        .setNanoTime(9876)
+        .setEndOfBatch(true)
+        .setLevel(Level.ALL)
+        .setThreadName("thread name")
+        .setLoggerName("logger name")
+        .setLoggerFqcn("logger fqcn")
+        .setMessage(new SimpleMessage("some message"))
+        .setMarker(new MarkerManager.Log4jMarker("marker name"))
+        .build();
+    final SumoLogEvent sumoLogEvent = new SumoLogEvent(logEvent);
+    Assert.assertEquals(logEvent.getMessage(), sumoLogEvent.getMessage());
+    Assert.assertEquals(logEvent.getContextMap(), sumoLogEvent.getContextMap());
+    Assert.assertEquals(logEvent.getContextStack(), sumoLogEvent.getContextStack());
+    Assert.assertEquals(logEvent.getLevel(), sumoLogEvent.getLevel());
+    Assert.assertEquals(logEvent.getLoggerFqcn(), sumoLogEvent.getLoggerFqcn());
+    Assert.assertEquals(logEvent.getLoggerName(), sumoLogEvent.getLoggerName());
+    Assert.assertEquals(logEvent.getMarker(), sumoLogEvent.getMarker());
+    Assert.assertEquals(logEvent.getNanoTime(), sumoLogEvent.getNanoTime());
+    Assert.assertEquals(logEvent.getSource(), sumoLogEvent.getSource());
+    Assert.assertEquals(logEvent.getThreadName(), sumoLogEvent.getThreadName());
+    Assert.assertEquals(logEvent.getThrownProxy(), sumoLogEvent.getThrownProxy());
+    Assert.assertEquals(logEvent.getTimeMillis(), sumoLogEvent.getTimeMillis());
+    Assert.assertEquals(logEvent.isEndOfBatch(), sumoLogEvent.isEndOfBatch());
+    Assert.assertEquals(logEvent.isIncludeLocation(), sumoLogEvent.isIncludeLocation());
   }
 
   static Log4jLogEvent.Builder baseBuilder()

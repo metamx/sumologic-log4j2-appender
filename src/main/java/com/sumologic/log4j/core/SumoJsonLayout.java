@@ -48,7 +48,7 @@ import org.apache.logging.log4j.util.Strings;
  * Borrowed heavily from org.apache.logging.log4j.core.layout.JsonLayout
  */
 @Plugin(name = "SumoJsonLayout", category = Node.CATEGORY, elementType = Layout.ELEMENT_TYPE, printObject = true)
-public final class SumoJsonLayout extends AbstractStringLayout
+public class SumoJsonLayout extends AbstractStringLayout
 {
   private static final String CONTENT_TYPE = "application/json; charset=" + StandardCharsets.UTF_8.displayName();
 
@@ -61,14 +61,6 @@ public final class SumoJsonLayout extends AbstractStringLayout
       // @formatter:on
   )
   {
-    return new SumoJsonLayout(locationInfo);
-  }
-
-  SumoJsonLayout(
-      final boolean locationInfo
-  )
-  {
-    super(StandardCharsets.UTF_8, null, null);
     final SimpleFilterProvider filters = new SimpleFilterProvider();
     final Set<String> except = new HashSet<>(2);
     if (!locationInfo) {
@@ -79,7 +71,13 @@ public final class SumoJsonLayout extends AbstractStringLayout
     except.add(JsonConstants.ELT_NANO_TIME);
     filters.addFilter(Log4jLogEvent.class.getName(), SimpleBeanPropertyFilter.serializeAllExcept(except));
     final ObjectWriter writer = new Log4jJsonObjectMapper().writer(new MinimalPrettyPrinter());
-    this.objectWriter = writer.with(filters);
+    return new SumoJsonLayout(writer.with(filters));
+  }
+
+  SumoJsonLayout(ObjectWriter objectWriter)
+  {
+    super(StandardCharsets.UTF_8, null, null);
+    this.objectWriter = objectWriter;
   }
 
   /**
@@ -94,7 +92,7 @@ public final class SumoJsonLayout extends AbstractStringLayout
   {
     final StringBuilderWriter writer = new StringBuilderWriter();
     try {
-      objectWriter.writeValue(writer, new SumoLogEvent(event));
+      objectWriter.writeValue(writer, wrap(event));
       writer.write('\n');
       return writer.toString();
     }
@@ -102,6 +100,12 @@ public final class SumoJsonLayout extends AbstractStringLayout
       LOGGER.error(e);
       return Strings.EMPTY;
     }
+  }
+
+  // Overridden in tests
+  LogEvent wrap(LogEvent event)
+  {
+    return new SumoLogEvent(event);
   }
 
   @Override
