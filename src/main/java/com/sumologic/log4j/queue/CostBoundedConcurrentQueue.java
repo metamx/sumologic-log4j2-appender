@@ -51,8 +51,7 @@ public class CostBoundedConcurrentQueue<T>
   private final BlockingQueue<T> queue;
   private final CostAssigner<T> costAssigner;
   private final AtomicLong cost = new AtomicLong(0);
-
-  private long capacity = 0;
+  private final long capacity;
 
 
   public CostBoundedConcurrentQueue(long capacity, CostAssigner<T> costAssigner)
