@@ -32,9 +32,6 @@ import com.sumologic.log4j.http.ProxySettings;
 import com.sumologic.log4j.http.SumoHttpSender;
 import com.sumologic.log4j.queue.BufferWithEviction;
 import com.sumologic.log4j.queue.BufferWithFifoEviction;
-import java.io.Serializable;
-import java.lang.management.ManagementFactory;
-import java.util.Optional;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -51,6 +48,10 @@ import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.apache.logging.log4j.status.StatusLogger;
+
+import java.io.Serializable;
+import java.lang.management.ManagementFactory;
+import java.util.Optional;
 
 /**
  * Log4J 2 Appender that sends log messages to Sumo Logic.
@@ -69,10 +70,8 @@ public class SumoLogicAppender extends AbstractAppender
   private static final long DEFAULT_MAX_FLUSH_INTERVAL = 10000;       // Maximum interval between flushes (ms)
   private static final long DEFAULT_FLUSHING_ACCURACY = 250;          // How often the flushed thread looks into the message queue (ms)
   private static final long DEFAULT_MAX_QUEUE_SIZE_BYTES = 1000000;   // Maximum message queue size (bytes)
-  private static final long DEFAULT_MAX_FLUSH_TIMEOUT_MS = (DEFAULT_CONNECTION_TIMEOUT
-                                                            + DEFAULT_SOCKET_TIMEOUT
-                                                            + DEFAULT_RETRY_INTERVAL) * 3
-                                                           + DEFAULT_FLUSHING_ACCURACY;     // Maximum timeout for flushing
+  private static final long DEFAULT_MAX_FLUSH_TIMEOUT_MS =
+      (DEFAULT_CONNECTION_TIMEOUT + DEFAULT_SOCKET_TIMEOUT + DEFAULT_RETRY_INTERVAL) * 3 + DEFAULT_FLUSHING_ACCURACY;
   private static final Logger logger = StatusLogger.getLogger();
 
 
@@ -83,20 +82,29 @@ public class SumoLogicAppender extends AbstractAppender
   private final CloseableHttpClient httpClient;
 
   protected SumoLogicAppender(
-      String name, Filter filter,
-      Layout<? extends Serializable> layout, final boolean ignoreExceptions,
-      String url, ProxySettings proxySettings,
-      int retryInterval, int connectionTimeout, int socketTimeout,
-      long messagesPerRequest, long maxFlushInterval,
-      String sourceName, String sourceHost, String sourceCategory,
-      long flushingAccuracy, long maxQueueSizeBytes, long maxFlushTimeout
+      final String name,
+      final Filter filter,
+      final Layout<? extends Serializable> layout,
+      final boolean ignoreExceptions,
+      final String url, ProxySettings proxySettings,
+      final int retryInterval,
+      final int connectionTimeout,
+      final int socketTimeout,
+      final long messagesPerRequest,
+      final long maxFlushInterval,
+      final String sourceName,
+      final String sourceHost,
+      final String sourceCategory,
+      final long flushingAccuracy,
+      final long maxQueueSizeBytes,
+      final long maxFlushTimeout
   )
   {
     super(name, filter, layout, ignoreExceptions);
     this.filter = filter;
 
     // Initialize queue
-    queue = new BufferWithFifoEviction<byte[]>(maxQueueSizeBytes, e -> {
+    queue = new BufferWithFifoEviction<>(maxQueueSizeBytes, e -> {
       // Note: This is only an estimate for total byte usage, since in UTF-8 encoding,
       // the size of one character may be > 1 byte.
       return e.length;
