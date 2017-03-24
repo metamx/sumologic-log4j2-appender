@@ -106,7 +106,7 @@ public class BufferWithFifoEviction<T> extends BufferWithEviction<T>
   }
 
   @Override
-  synchronized public boolean add(T element)
+  public boolean add(T element)
   {
     boolean wasSuccessful = queue.offer(element);
     if (!wasSuccessful) {
