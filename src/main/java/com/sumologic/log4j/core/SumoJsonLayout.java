@@ -16,11 +16,17 @@
  */
 package com.sumologic.log4j.core;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.util.MinimalPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.ThreadContext;
@@ -39,12 +45,6 @@ import org.apache.logging.log4j.core.util.StringBuilderWriter;
 import org.apache.logging.log4j.message.Message;
 import org.apache.logging.log4j.util.Strings;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 /**
  * Borrowed heavily from org.apache.logging.log4j.core.layout.JsonLayout
  */
@@ -57,9 +57,7 @@ public class SumoJsonLayout extends AbstractStringLayout
 
   @PluginFactory
   public static SumoJsonLayout createLayout(
-      // @formatter:off
       @PluginAttribute(value = "locationInfo", defaultBoolean = false) final boolean locationInfo
-      // @formatter:on
   )
   {
     final SimpleFilterProvider filters = new SimpleFilterProvider();
@@ -127,9 +125,16 @@ class SumoLogEvent implements LogEvent
   }
 
   @Override
+  @JsonIgnore
   public Map<String, String> getContextMap()
   {
-    final Map<String, String> map = delegate.getContextMap();
+    return delegate.getContextMap();
+  }
+
+  @JsonProperty("contextMap")
+  public Map<String, String> getNullableContextMap()
+  {
+    final Map<String, String> map = getContextMap();
     return map.isEmpty() ? null : map;
   }
 

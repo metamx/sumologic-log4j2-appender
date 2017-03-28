@@ -89,6 +89,7 @@ public class SumoHttpSender
       }
       catch (Exception e) {
         // Exponential backoff with jitter
+        // From https://github.com/metamx/java-util/blob/java-util-0.28.2/src/main/java/com/metamx/common/RetryUtils.java#L85
         final double fuzzyMultiplier = Math.min(Math.max(1 + 0.2 * ThreadLocalRandom.current().nextGaussian(), 0), 2);
         final long sleepMillis = (long) (Math.min(retryInterval * 100, retryInterval * Math.pow(2, nTry - 1))
                                          * fuzzyMultiplier);

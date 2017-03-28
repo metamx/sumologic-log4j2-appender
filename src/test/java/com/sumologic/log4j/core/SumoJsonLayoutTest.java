@@ -95,7 +95,7 @@ public class SumoJsonLayoutTest
     final LogEvent logEvent = baseBuilder()
         .setContextMap(contextMap)
         .build();
-    final String jsonString = "{\"timestamp\":12345,\"thread\":\"some thread\",\"level\":\"ERROR\",\"loggerName\":\"some name\",\"message\":\"some message\",\"contextMap\":[{\"key\":\"foo\",\"value\":\"bar\"}]}\n";
+    final String jsonString = "{\"timestamp\":12345,\"thread\":\"some thread\",\"level\":\"ERROR\",\"loggerName\":\"some name\",\"message\":\"some message\",\"contextMap\":{\"foo\":\"bar\"}}\n";
     Assert.assertEquals(jsonString, sumoJsonLayout.toSerializable(logEvent));
   }
 
