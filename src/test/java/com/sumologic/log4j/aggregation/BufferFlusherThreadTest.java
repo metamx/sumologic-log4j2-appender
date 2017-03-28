@@ -62,16 +62,16 @@ public class BufferFlusherThreadTest
     BufferFlusherThread<String, List<String>> task =
         createTask(Integer.MAX_VALUE, 3);
 
-    task.runTask();
+    task.runTask(false);
     assertTrue(tasks.isEmpty());
     queue.add("msg1");
     queue.add("msg2");
 
-    task.runTask();
+    task.runTask(false);
     assertTrue(tasks.isEmpty());
     queue.add("msg3");
 
-    task.runTask();
+    task.runTask(false);
     assertEquals(1, tasks.size());
     List<String> aggregatedResult = tasks.get(0);
     assertEquals(3, aggregatedResult.size());
@@ -84,16 +84,16 @@ public class BufferFlusherThreadTest
     BufferFlusherThread<String, List<String>> task =
         createTask(-1, Integer.MAX_VALUE);
 
-    task.runTask();
+    task.runTask(false);
     assertTrue(tasks.isEmpty());
 
     queue.add("msg1");
     queue.add("msg2");
-    task.runTask();
+    task.runTask(false);
     assertEquals(1, tasks.size());
 
     queue.add("msg3");
-    task.runTask();
+    task.runTask(false);
     assertEquals(2, tasks.size());
 
     List<String> aggregatedResult = tasks.get(0);
@@ -106,12 +106,12 @@ public class BufferFlusherThreadTest
   {
     BufferFlusherThread<String, List<String>> task =
         createTask(Integer.MAX_VALUE, Integer.MAX_VALUE);
-    task.runTask();
+    task.runTask(false);
     assertTrue(tasks.isEmpty());
     queue.add("msg1");
     queue.add("msg2");
 
-    task.runTask();
+    task.runTask(false);
     assertTrue(tasks.isEmpty());
   }
 
