@@ -31,8 +31,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.zip.GZIPInputStream;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.status.StatusLogger;
@@ -46,7 +47,7 @@ public class AggregatingHttpHandler implements HttpHandler
 {
   private static final Logger logger = StatusLogger.getLogger();
   private static String REQUEST_ENCODING = "UTF-8";
-  private List<MaterializedHttpRequest> exchanges = new ArrayList<MaterializedHttpRequest>();
+  private Collection<MaterializedHttpRequest> exchanges = new ConcurrentLinkedQueue<>();
 
   // Extract and materialize HTTP Request Body into a String
   private String readRequestBody(HttpExchange httpExchange) throws IOException
@@ -83,9 +84,9 @@ public class AggregatingHttpHandler implements HttpHandler
     httpExchange.close();
   }
 
-  public List<MaterializedHttpRequest> getExchanges()
+  public Collection<MaterializedHttpRequest> getExchanges()
   {
-    return Collections.unmodifiableList(exchanges);
+    return Collections.unmodifiableList(new ArrayList<>(exchanges));
   }
 
   public void clearExchanges()
