@@ -57,6 +57,7 @@ public class SumoBufferFlusherThread extends BufferFlusherThread<byte[], byte[]>
     this.maxFlushInterval = maxFlushInterval;
     this.messagesPerRequest = messagesPerRequest;
     setName("SumoBufferFlusherThread");
+    setDaemon(true);
   }
 
   @Override
