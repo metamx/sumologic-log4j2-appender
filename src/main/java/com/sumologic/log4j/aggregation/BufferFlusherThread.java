@@ -26,23 +26,36 @@
 package com.sumologic.log4j.aggregation;
 
 import com.sumologic.log4j.queue.BufferWithEviction;
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.status.StatusLogger;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Task to perform a single flushing check
  *
  * @author Jose Muniz (jose@sumologic.com)
  */
-public abstract class BufferFlushingTask<In, Out> implements Runnable
+public abstract class BufferFlusherThread<In, Out> extends Thread
 {
   private static final Logger logger = StatusLogger.getLogger();
 
   private final BufferWithEviction<In> messageQueue;
+  private final long flushPeriod;
+  private final TimeUnit flushPeriodUnit;
+  private boolean terminating = false;
 
   private long timeOfLastFlush = System.currentTimeMillis();
+
+  protected BufferFlusherThread(BufferWithEviction<In> messageQueue, long flushPeriod, TimeUnit flushPeriodUnit)
+  {
+    this.messageQueue = messageQueue;
+    this.flushPeriod = flushPeriod;
+    this.flushPeriodUnit = flushPeriodUnit;
+    setDaemon(true);
+  }
 
   private boolean needsFlushing()
   {
@@ -81,11 +94,6 @@ public abstract class BufferFlushingTask<In, Out> implements Runnable
 
   abstract protected long getMessagesPerRequest();
 
-  protected BufferFlushingTask(BufferWithEviction<In> messageQueue)
-  {
-    this.messageQueue = messageQueue;
-  }
-
   // Given the list of messages, aggregate them into a single Out object
   abstract protected Out aggregate(List<In> messages);
 
@@ -96,16 +104,43 @@ public abstract class BufferFlushingTask<In, Out> implements Runnable
 
   /* Public interface */
 
+  public void setTerminating()
+  {
+    terminating = true;
+  }
+
+  public void runTask()
+  {
+    if ((terminating && messageQueue.size() > 0) || needsFlushing()) {
+      flushAndSendCatchingExceptions();
+    }
+  }
+
   @Override
   public void run()
   {
-    if (needsFlushing()) {
+    while (true) {
+      runTask();
+      if (terminating) {
+        return;
+      }
       try {
-        flushAndSend();
+        Thread.sleep(flushPeriodUnit.toMillis(flushPeriod));
       }
-      catch (Exception e) {
-        logger.warn("Exception while attempting to flush and send", e);
+      catch (InterruptedException e) {
+        // Interruption means SumoBufferFlusher.stop() is called. Flushing the remaining messages and exit. Proceed
+        // to the next iteration, where terminating == true should be visible.
       }
+    }
+  }
+
+  private void flushAndSendCatchingExceptions()
+  {
+    try {
+      flushAndSend();
+    }
+    catch (Exception e) {
+      logger.warn("Exception while attempting to flush and send", e);
     }
   }
 

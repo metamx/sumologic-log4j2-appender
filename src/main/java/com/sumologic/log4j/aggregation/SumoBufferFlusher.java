@@ -25,12 +25,9 @@
  */
 package com.sumologic.log4j.aggregation;
 
-import com.sumologic.log4j.http.SumoBufferFlushingTask;
+import com.sumologic.log4j.http.SumoBufferFlusherThread;
 import com.sumologic.log4j.http.SumoHttpSender;
 import com.sumologic.log4j.queue.BufferWithEviction;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.Logger;
 
 /**
@@ -38,10 +35,9 @@ import org.apache.logging.log4j.Logger;
  */
 public class SumoBufferFlusher
 {
-  private final ScheduledExecutorService executor;
   private final long maxFlushTimeoutMs;
   private final Logger logger;
-  private final SumoBufferFlushingTask flushingTask;
+  private final SumoBufferFlusherThread flushingThread;
   private final long flushingAccuracy;
 
 
@@ -59,37 +55,30 @@ public class SumoBufferFlusher
     this.maxFlushTimeoutMs = maxFlushTimeoutMs;
     this.logger = logger;
 
-    flushingTask = new SumoBufferFlushingTask(
+    flushingThread = new SumoBufferFlusherThread(
         buffer,
         sender,
+        flushingAccuracy,
         maxFlushInterval,
         messagesPerRequest
     );
-
-    executor = Executors.newSingleThreadScheduledExecutor(r -> {
-      final Thread thread = new Thread(r);
-      thread.setName("SumoBufferFlusherThread");
-      thread.setDaemon(true);
-      return thread;
-    });
   }
 
   public void start()
   {
-    executor.scheduleWithFixedDelay(flushingTask, 0, flushingAccuracy, TimeUnit.MILLISECONDS);
+    flushingThread.start();
   }
 
   public void stop() throws InterruptedException
   {
-    executor.shutdown();
+    flushingThread.setTerminating();
+    flushingThread.interrupt();
 
     // Keep the current task running until it's done sending
 
-    if (maxFlushTimeoutMs >= 0) {
-      if (executor.awaitTermination(maxFlushTimeoutMs, TimeUnit.MILLISECONDS)) {
-        logger.warn("Timed out waiting for buffer flusher to finish.");
-      }
+    flushingThread.join(maxFlushTimeoutMs + flushingAccuracy + 1);
+    if (flushingThread.isAlive()) {
+      logger.warn("Timed out waiting for buffer flusher to finish.");
     }
-    executor.shutdownNow();
   }
 }

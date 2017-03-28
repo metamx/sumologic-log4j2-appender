@@ -25,34 +25,38 @@
  */
 package com.sumologic.log4j.http;
 
-import com.sumologic.log4j.aggregation.BufferFlushingTask;
+import com.sumologic.log4j.aggregation.BufferFlusherThread;
 import com.sumologic.log4j.queue.BufferWithEviction;
-import java.nio.ByteBuffer;
-import java.util.List;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.status.StatusLogger;
+
+import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Jose Muniz (jose@sumologic.com)
  */
-public class SumoBufferFlushingTask extends BufferFlushingTask<byte[], byte[]>
+public class SumoBufferFlusherThread extends BufferFlusherThread<byte[], byte[]>
 {
   private static final Logger logger = StatusLogger.getLogger();
   private final SumoHttpSender sender;
   private final long maxFlushInterval;
   private final long messagesPerRequest;
 
-  public SumoBufferFlushingTask(
+  public SumoBufferFlusherThread(
       BufferWithEviction<byte[]> queue,
       SumoHttpSender sender,
+      long flushingAccuracy,
       long maxFlushInterval,
       long messagesPerRequest
   )
   {
-    super(queue);
+    super(queue, flushingAccuracy, TimeUnit.MILLISECONDS);
     this.sender = sender;
     this.maxFlushInterval = maxFlushInterval;
     this.messagesPerRequest = messagesPerRequest;
+    setName("SumoBufferFlusherThread");
   }
 
   @Override
