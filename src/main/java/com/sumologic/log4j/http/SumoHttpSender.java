@@ -1,11 +1,11 @@
 /**
- *  _____ _____ _____ _____    __    _____ _____ _____ _____
+ * _____ _____ _____ _____    __    _____ _____ _____ _____
  * |   __|  |  |     |     |  |  |  |     |   __|     |     |
  * |__   |  |  | | | |  |  |  |  |__|  |  |  |  |-   -|   --|
  * |_____|_____|_|_|_|_____|  |_____|_____|_____|_____|_____|
- *
+ * <p>
  * UNICORNS AT WARP SPEED SINCE 2010
- *
+ * <p>
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -13,9 +13,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -25,6 +25,8 @@
  */
 package com.sumologic.log4j.http;
 
+import java.io.IOException;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.entity.GzipCompressingEntity;
 import org.apache.http.client.methods.HttpPost;
@@ -33,9 +35,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.status.StatusLogger;
-
-import java.io.IOException;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author Jose Muniz (jose@sumologic.com)
@@ -69,9 +68,29 @@ public class SumoHttpSender
     this.category = category;
   }
 
+  long jitter(long input)
+  {
+    // From https://github.com/druid-io/druid/blob/druid-0.9.2/indexing-service/src/main/java/io/druid/indexing/common/actions/RemoteTaskActionClient.java#L152
+    final double jitter = ThreadLocalRandom.current().nextGaussian() * input / 4.0;
+    return Math.max(input + (long) jitter, 0);
+  }
+
+  long exponentialBackoff(int nTry)
+  {
+    // Exponential backoff with jitter
+    // From https://github.com/metamx/java-util/blob/java-util-0.28.2/src/main/java/com/metamx/common/RetryUtils.java#L85
+    return jitter((long) Math.min(retryInterval * 100, retryInterval * Math.pow(2, nTry - 1)));
+  }
+
   public boolean isInitialized()
   {
     return httpClient != null;
+  }
+
+  void retrySleep(int nTry) throws InterruptedException
+  {
+    final long sleepMillis = exponentialBackoff(nTry);
+    Thread.sleep(sleepMillis);
   }
 
   public void send(byte[] body)
@@ -88,18 +107,13 @@ public class SumoHttpSender
         return;
       }
       catch (Exception e) {
-        // Exponential backoff with jitter
-        // From https://github.com/metamx/java-util/blob/java-util-0.28.2/src/main/java/com/metamx/common/RetryUtils.java#L85
-        final double fuzzyMultiplier = Math.min(Math.max(1 + 0.2 * ThreadLocalRandom.current().nextGaussian(), 0), 2);
-        final long sleepMillis = (long) (Math.min(retryInterval * 100, retryInterval * Math.pow(2, nTry - 1))
-                                         * fuzzyMultiplier);
-        nTry += 1;
         try {
-          Thread.sleep(sleepMillis);
+          retrySleep(nTry);
         }
         catch (InterruptedException e1) {
           break;
         }
+        nTry += 1;
       }
     }
     logger.warn("Not sent");
