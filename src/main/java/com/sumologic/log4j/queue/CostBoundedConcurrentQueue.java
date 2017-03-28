@@ -25,10 +25,8 @@
  */
 package com.sumologic.log4j.queue;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -48,7 +46,7 @@ public class CostBoundedConcurrentQueue<T>
   // Right now this does a queue of byte arrays.
   // It would be nice if this could ultimately just hold a ByteBuffer,
   // but memory guarantees around ByteBuffers are not strong :(
-  private final BlockingQueue<T> queue;
+  private final ConcurrentLinkedQueue<T> queue;
   private final CostAssigner<T> costAssigner;
   private final AtomicLong cost = new AtomicLong(0);
   private final long capacity;
@@ -56,7 +54,7 @@ public class CostBoundedConcurrentQueue<T>
 
   public CostBoundedConcurrentQueue(long capacity, CostAssigner<T> costAssigner)
   {
-    this.queue = new LinkedBlockingQueue<T>();
+    this.queue = new ConcurrentLinkedQueue<>();
     this.costAssigner = costAssigner;
     this.capacity = capacity;
   }
@@ -90,14 +88,17 @@ public class CostBoundedConcurrentQueue<T>
    */
   public int drainTo(Collection<T> collection, int max)
   {
-    final Collection<T> intermediary = new ArrayList<>(max);
-
-    final int elementsDrained = queue.drainTo(intermediary, max);
-    for (T e : intermediary) {
-      cost.addAndGet(-costAssigner.cost(e));
+    int elementsDrained = 0;
+    for (int i = 0; i < max; i++) {
+      T e = queue.poll();
+      if (e != null) {
+        cost.addAndGet(-costAssigner.cost(e));
+        collection.add(e);
+        elementsDrained++;
+      } else {
+        break;
+      }
     }
-    collection.addAll(intermediary);
-
     return elementsDrained;
   }
 
