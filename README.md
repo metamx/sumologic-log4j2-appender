@@ -67,6 +67,11 @@ Be sure to replace [collector-url] with the URL after creating an HTTP Hosted Co
 | flushingAccuracy   | No       | 250           | How often (in ms) that the flushing thread checks the message queue                                                                        |
 | maxQueueSizeBytes  | No       | 1000000       | Maximum capacity (in bytes) of the message queue                                                                                           |
 
+### NOTE: 
+The thread for sending data is a non daemon thread. As such, if your connectivity to SumoLogic is disrupted and the
+JVM tries to shutdown, it may not be able to shutdown completely if the sending thread is still active. Users should
+ensure Log4j shutdown hooks are registered and handled properly.
+
 # SumoJsonLayout
 The `SumoJsonLayout` is a JSON layout with namings and optimizations for sending log events to SumoLogic via a HTTP Collector.
 The specific changes it has compared to the standard JSON layout are as follows:
