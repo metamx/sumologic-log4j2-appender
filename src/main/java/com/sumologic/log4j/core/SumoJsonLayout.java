@@ -21,11 +21,6 @@ import com.fasterxml.jackson.core.util.MinimalPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.ThreadContext;
@@ -43,6 +38,12 @@ import org.apache.logging.log4j.core.layout.AbstractStringLayout;
 import org.apache.logging.log4j.core.util.StringBuilderWriter;
 import org.apache.logging.log4j.message.Message;
 import org.apache.logging.log4j.util.Strings;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Borrowed heavily from org.apache.logging.log4j.core.layout.JsonLayout
@@ -62,7 +63,7 @@ public class SumoJsonLayout extends AbstractStringLayout
   )
   {
     final SimpleFilterProvider filters = new SimpleFilterProvider();
-    final Set<String> except = new HashSet<>(2);
+    final Set<String> except = new HashSet<>();
     if (!locationInfo) {
       except.add(JsonConstants.ELT_SOURCE);
     }

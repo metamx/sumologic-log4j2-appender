@@ -27,6 +27,9 @@ package com.sumologic.log4j.server;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.status.StatusLogger;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -35,8 +38,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.zip.GZIPInputStream;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.status.StatusLogger;
 
 /**
  * Author: Jose Muniz (jose@sumologic.com)
@@ -46,17 +47,20 @@ import org.apache.logging.log4j.status.StatusLogger;
 public class AggregatingHttpHandler implements HttpHandler
 {
   private static final Logger logger = StatusLogger.getLogger();
-  private static String REQUEST_ENCODING = "UTF-8";
-  private Collection<MaterializedHttpRequest> exchanges = new ConcurrentLinkedQueue<>();
+  private static final String REQUEST_ENCODING = "UTF-8";
+
+  private final Collection<MaterializedHttpRequest> exchanges = new ConcurrentLinkedQueue<>();
 
   // Extract and materialize HTTP Request Body into a String
   private String readRequestBody(HttpExchange httpExchange) throws IOException
   {
     StringBuilder content = new StringBuilder();
-    InputStreamReader is = new InputStreamReader(new GZIPInputStream(httpExchange.getRequestBody()), REQUEST_ENCODING);
-    int c;
-    while ((c = is.read()) != -1) {
-      content.append((char) c);
+    try (InputStreamReader is =
+             new InputStreamReader(new GZIPInputStream(httpExchange.getRequestBody()), REQUEST_ENCODING)) {
+      int c;
+      while ((c = is.read()) != -1) {
+        content.append((char) c);
+      }
     }
 
     return content.toString();

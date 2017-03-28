@@ -25,8 +25,6 @@
  */
 package com.sumologic.log4j.http;
 
-import java.io.IOException;
-import java.util.concurrent.ThreadLocalRandom;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.entity.GzipCompressingEntity;
 import org.apache.http.client.methods.HttpPost;
@@ -35,6 +33,9 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.status.StatusLogger;
+
+import java.io.IOException;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author Jose Muniz (jose@sumologic.com)
@@ -80,12 +81,11 @@ public class SumoHttpSender
 
   private void keepTrying(byte[] body)
   {
-    boolean success = false;
     int nTry = 1;
-    do {
+    while (!Thread.currentThread().isInterrupted()) {
       try {
         trySend(body);
-        success = true;
+        return;
       }
       catch (Exception e) {
         // Exponential backoff with jitter
@@ -100,7 +100,8 @@ public class SumoHttpSender
           break;
         }
       }
-    } while (!success && !Thread.currentThread().isInterrupted());
+    }
+    logger.warn("Not sent");
   }
 
   private void trySend(byte[] body) throws IOException
@@ -120,7 +121,7 @@ public class SumoHttpSender
       final HttpResponse response = httpClient.execute(post);
       final int statusCode = response.getStatusLine().getStatusCode();
       if (statusCode != 200) {
-        logger.warn(String.format("Received HTTP error from Sumo Service: %d", statusCode));
+        logger.warn("Received HTTP error from Sumo Service: {}", statusCode);
         // Not success. Only retry if status is unavailable.
         if (statusCode == 503) {
           throw new IOException("Server unavailable");
@@ -131,8 +132,7 @@ public class SumoHttpSender
       EntityUtils.consume(response.getEntity());
     }
     catch (IOException e) {
-      logger.warn("Could not send log to Sumo Logic");
-      logger.debug("Reason:", e);
+      logger.warn("Could not send log to Sumo Logic", e);
       try {
         post.abort();
       }
