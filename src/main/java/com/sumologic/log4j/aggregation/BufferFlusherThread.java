@@ -46,21 +46,18 @@ public abstract class BufferFlusherThread<In, Out> extends Thread
   private final long flushPeriod;
   private final TimeUnit flushPeriodUnit;
   private volatile boolean terminating = false;
-  private final boolean flushOnError;
 
   private long timeOfLastFlush = System.currentTimeMillis();
 
   protected BufferFlusherThread(
       BufferWithEviction<In> messageQueue,
       long flushPeriod,
-      TimeUnit flushPeriodUnit,
-      boolean flushOnError
+      TimeUnit flushPeriodUnit
   )
   {
     this.messageQueue = messageQueue;
     this.flushPeriod = flushPeriod;
     this.flushPeriodUnit = flushPeriodUnit;
-    this.flushOnError = flushOnError;
     setDaemon(true);
   }
 
@@ -69,9 +66,7 @@ public abstract class BufferFlusherThread<In, Out> extends Thread
     final long currentTime = System.currentTimeMillis();
     final long dateOfNextFlush = timeOfLastFlush + getMaxFlushInterval();
 
-    return (currentTime >= dateOfNextFlush) ||
-           (messageQueue.size() >= getMessagesPerRequest()) ||
-           (flushOnError && this.messageQueue.hasError());
+    return this.flushImmediately() || (currentTime >= dateOfNextFlush) || (messageQueue.size() >= getMessagesPerRequest());
   }
 
   private void flushAndSend()
@@ -93,7 +88,6 @@ public abstract class BufferFlusherThread<In, Out> extends Thread
       final Out body = aggregate(messages);
       sendOut(body);
       timeOfLastFlush = System.currentTimeMillis();
-      messageQueue.setError(false);
     }
   }
 
@@ -104,13 +98,17 @@ public abstract class BufferFlusherThread<In, Out> extends Thread
 
   abstract protected long getMessagesPerRequest();
 
+  // An OR condition in needsFlushing. It gives subclass more control over when to flush.
+  abstract protected boolean flushImmediately();
+
   // Given the list of messages, aggregate them into a single Out object
   abstract protected Out aggregate(List<In> messages);
 
   // Send aggregated message out. Block until we've successfully sent it.
   abstract protected void sendOut(Out body);
 
-
+  // Gives subclass a control over whether a sleep or immediately flush is needed.
+  protected abstract boolean isSleepNeeded();
 
   /* Public interface */
 
@@ -136,7 +134,9 @@ public abstract class BufferFlusherThread<In, Out> extends Thread
         return;
       }
       try {
-        Thread.sleep(flushPeriodUnit.toMillis(flushPeriod));
+        if(this.isSleepNeeded()) {
+          Thread.sleep(flushPeriodUnit.toMillis(flushPeriod));
+        }
       }
       catch (InterruptedException e) {
         // Interruption means SumoBufferFlusher.stop() is called. Flushing the remaining messages and exit. Proceed

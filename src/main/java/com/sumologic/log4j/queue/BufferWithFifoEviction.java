@@ -43,7 +43,6 @@ public class BufferWithFifoEviction<T> extends BufferWithEviction<T>
   private static final Logger logger = StatusLogger.getLogger();
   private final CostBoundedConcurrentQueue<T> queue;
   private final CostAssigner<T> costAssigner;
-  private volatile boolean hasError;
 
   public BufferWithFifoEviction(long capacity, CostAssigner<T> costAssigner)
   {
@@ -115,17 +114,5 @@ public class BufferWithFifoEviction<T> extends BufferWithEviction<T>
       return queue.offer(element);
     }
     return true;
-  }
-
-  @Override
-  public boolean hasError()
-  {
-    return this.hasError;
-  }
-
-  @Override
-  public void setError(boolean hasError)
-  {
-    this.hasError = hasError;
   }
 }

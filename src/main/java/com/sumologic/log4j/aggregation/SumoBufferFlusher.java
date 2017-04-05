@@ -40,6 +40,7 @@ public class SumoBufferFlusher
   private final SumoBufferFlusherThread flushingThread;
   private final long flushingAccuracy;
   private final boolean flushOnError;
+  private final SumoBufferFlusherThread.ErrorLogObserver errorLogObserver;
 
   public SumoBufferFlusher(
       long flushingAccuracy,
@@ -57,13 +58,29 @@ public class SumoBufferFlusher
     this.flushOnError = flushOnError;
     this.logger = logger;
 
+    this.errorLogObserver = new SumoBufferFlusherThread.ErrorLogObserver()
+    {
+      private volatile boolean hasError;
+      @Override
+      public void recordError(boolean hasError)
+      {
+        this.hasError = hasError && flushOnError;
+      }
+
+      @Override
+      public boolean hasError()
+      {
+        return this.hasError;
+      }
+    };
+
     flushingThread = new SumoBufferFlusherThread(
         buffer,
         sender,
         flushingAccuracy,
         maxFlushInterval,
         messagesPerRequest,
-        flushOnError
+        this.errorLogObserver
     );
   }
 
@@ -85,8 +102,10 @@ public class SumoBufferFlusher
     }
   }
 
-  public void interrupt() throws InterruptedException {
-    if(flushOnError) {
+  public void flushOnError()
+  {
+    if(this.flushOnError && !this.errorLogObserver.hasError()) {
+      this.errorLogObserver.recordError(true);
       flushingThread.interrupt();
     }
   }

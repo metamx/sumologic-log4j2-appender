@@ -48,12 +48,14 @@ public class BufferFlusherThreadTest
 
   private List<List<String>> tasks;
   private BufferWithFifoEviction<String> queue;
+  private boolean flushImmediately = false;
 
   @Before
   public void setUp()
   {
     tasks = new ArrayList<>();
     queue = new BufferWithFifoEviction<>(1000, sizeElements);
+    flushImmediately = false;
   }
 
   @Test
@@ -125,7 +127,7 @@ public class BufferFlusherThreadTest
 
     queue.add("msg1");
     queue.add("msg2");
-    queue.setError(true);
+    this.flushImmediately = true;
     task.runTask(false);
 
     assertEquals(1, tasks.size());
@@ -139,7 +141,7 @@ public class BufferFlusherThreadTest
   )
   {
 
-    return new BufferFlusherThread<String, List<String>>(queue, 1, TimeUnit.MILLISECONDS, true)
+    return new BufferFlusherThread<String, List<String>>(queue, 1, TimeUnit.MILLISECONDS)
     {
 
       @Override
@@ -152,6 +154,12 @@ public class BufferFlusherThreadTest
       protected long getMessagesPerRequest()
       {
         return messagesPerRequest;
+      }
+
+      @Override
+      protected boolean flushImmediately()
+      {
+        return flushImmediately;
       }
 
       @Override

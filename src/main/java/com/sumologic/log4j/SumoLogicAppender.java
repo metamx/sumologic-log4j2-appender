@@ -240,10 +240,7 @@ public class SumoLogicAppender extends AbstractAppender
     try {
       queue.add(message);
       if (event.getLevel().isInRange(Level.FATAL, Level.ERROR)) {
-        if(!queue.hasError()) {
-          queue.setError(true);
-          this.flusher.interrupt();
-        }
+        this.flusher.flushOnError();
       }
     }
     catch (Exception e) {
