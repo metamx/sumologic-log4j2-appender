@@ -173,6 +173,12 @@ public class BufferFlusherThreadTest
       {
         tasks.add(body);
       }
+
+      @Override
+      protected boolean isSleepNeeded()
+      {
+        return true;
+      }
     };
   }
 }
