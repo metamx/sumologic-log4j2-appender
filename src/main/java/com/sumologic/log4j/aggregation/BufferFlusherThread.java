@@ -45,7 +45,7 @@ public abstract class BufferFlusherThread<In, Out> extends Thread
   private final BufferWithEviction<In> messageQueue;
   private final long flushPeriod;
   private final TimeUnit flushPeriodUnit;
-  private boolean terminating = false;
+  private volatile boolean terminating = false;
   private final boolean flushOnError;
 
   private long timeOfLastFlush = System.currentTimeMillis();
@@ -69,9 +69,9 @@ public abstract class BufferFlusherThread<In, Out> extends Thread
     final long currentTime = System.currentTimeMillis();
     final long dateOfNextFlush = timeOfLastFlush + getMaxFlushInterval();
 
-    return (currentTime >= dateOfNextFlush) || (messageQueue.size() >= getMessagesPerRequest()) || (flushOnError
-                                                                                                    && this.messageQueue
-                                                                                                        .hasError());
+    return (currentTime >= dateOfNextFlush) ||
+           (messageQueue.size() >= getMessagesPerRequest()) ||
+           (flushOnError && this.messageQueue.hasError());
   }
 
   private void flushAndSend()

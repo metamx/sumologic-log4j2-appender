@@ -39,7 +39,7 @@ public class SumoBufferFlusher
   private final Logger logger;
   private final SumoBufferFlusherThread flushingThread;
   private final long flushingAccuracy;
-
+  private final boolean flushOnError;
 
   public SumoBufferFlusher(
       long flushingAccuracy,
@@ -54,6 +54,7 @@ public class SumoBufferFlusher
   {
     this.flushingAccuracy = flushingAccuracy;
     this.maxFlushTimeoutMs = maxFlushTimeoutMs;
+    this.flushOnError = flushOnError;
     this.logger = logger;
 
     flushingThread = new SumoBufferFlusherThread(
@@ -81,6 +82,12 @@ public class SumoBufferFlusher
     flushingThread.join(maxFlushTimeoutMs + flushingAccuracy + 1);
     if (flushingThread.isAlive()) {
       logger.warn("Timed out waiting for buffer flusher to finish.");
+    }
+  }
+
+  public void interrupt() throws InterruptedException {
+    if(flushOnError) {
+      flushingThread.interrupt();
     }
   }
 }
