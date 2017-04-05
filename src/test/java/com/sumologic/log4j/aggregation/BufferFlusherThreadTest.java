@@ -1,11 +1,11 @@
 /**
- *  _____ _____ _____ _____    __    _____ _____ _____ _____
+ * _____ _____ _____ _____    __    _____ _____ _____ _____
  * |   __|  |  |     |     |  |  |  |     |   __|     |     |
  * |__   |  |  | | | |  |  |  |  |__|  |  |  |  |-   -|   --|
  * |_____|_____|_|_|_|_____|  |_____|_____|_____|_____|_____|
- *
+ * <p>
  * UNICORNS AT WARP SPEED SINCE 2010
- *
+ * <p>
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -13,9 +13,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -48,12 +48,14 @@ public class BufferFlusherThreadTest
 
   private List<List<String>> tasks;
   private BufferWithFifoEviction<String> queue;
+  private boolean flushImmediately = false;
 
   @Before
   public void setUp()
   {
     tasks = new ArrayList<>();
     queue = new BufferWithFifoEviction<>(1000, sizeElements);
+    flushImmediately = false;
   }
 
   @Test
@@ -115,6 +117,25 @@ public class BufferFlusherThreadTest
     assertTrue(tasks.isEmpty());
   }
 
+  @Test
+  public void testFlushByErrorLogs_LongInterval() throws Exception
+  {
+    BufferFlusherThread<String, List<String>> task =
+        createTask(Integer.MAX_VALUE, Integer.MAX_VALUE);
+    task.runTask(false);
+    assertTrue(tasks.isEmpty());
+
+    queue.add("msg1");
+    queue.add("msg2");
+    this.flushImmediately = true;
+    task.runTask(false);
+
+    assertEquals(1, tasks.size());
+    List<String> aggregatedResult = tasks.get(0);
+    assertEquals(2, aggregatedResult.size());
+    assertEquals(Arrays.asList("msg1", "msg2"), aggregatedResult);
+  }
+
   private BufferFlusherThread<String, List<String>> createTask(
       final long maxFlushInterval, final long messagesPerRequest
   )
@@ -136,6 +157,12 @@ public class BufferFlusherThreadTest
       }
 
       @Override
+      protected boolean flushImmediately()
+      {
+        return flushImmediately;
+      }
+
+      @Override
       protected List<String> aggregate(List<String> messages)
       {
         return messages;
@@ -145,6 +172,12 @@ public class BufferFlusherThreadTest
       protected void sendOut(List<String> body)
       {
         tasks.add(body);
+      }
+
+      @Override
+      protected boolean isSleepNeeded()
+      {
+        return true;
       }
     };
   }

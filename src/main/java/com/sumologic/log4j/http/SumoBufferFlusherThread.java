@@ -1,11 +1,11 @@
 /**
- *  _____ _____ _____ _____    __    _____ _____ _____ _____
+ * _____ _____ _____ _____    __    _____ _____ _____ _____
  * |   __|  |  |     |     |  |  |  |     |   __|     |     |
  * |__   |  |  | | | |  |  |  |  |__|  |  |  |  |-   -|   --|
  * |_____|_____|_|_|_|_____|  |_____|_____|_____|_____|_____|
- *
+ * <p>
  * UNICORNS AT WARP SPEED SINCE 2010
- *
+ * <p>
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -13,9 +13,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -39,24 +39,43 @@ import java.util.concurrent.TimeUnit;
  */
 public class SumoBufferFlusherThread extends BufferFlusherThread<byte[], byte[]>
 {
+  public interface ErrorLogObserver
+  {
+    void recordError(boolean hasError);
+    boolean hasError();
+  }
+
   private static final Logger logger = StatusLogger.getLogger();
   private final SumoHttpSender sender;
   private final long maxFlushInterval;
   private final long messagesPerRequest;
+  private final ErrorLogObserver errorLogObserver;
 
   public SumoBufferFlusherThread(
       BufferWithEviction<byte[]> queue,
       SumoHttpSender sender,
       long flushingAccuracy,
       long maxFlushInterval,
-      long messagesPerRequest
+      long messagesPerRequest,
+      ErrorLogObserver errorLogObserver
   )
   {
     super(queue, flushingAccuracy, TimeUnit.MILLISECONDS);
     this.sender = sender;
     this.maxFlushInterval = maxFlushInterval;
     this.messagesPerRequest = messagesPerRequest;
+    this.errorLogObserver = errorLogObserver;
     setName("SumoBufferFlusherThread");
+  }
+
+  @Override
+  protected boolean flushImmediately() {
+    if(errorLogObserver.hasError())
+    {
+      errorLogObserver.recordError(false);
+      return true;
+    }
+    return false;
   }
 
   @Override
@@ -94,5 +113,11 @@ public class SumoBufferFlusherThread extends BufferFlusherThread<byte[], byte[]>
     } else {
       logger.error("HTTPSender is not initialized");
     }
+  }
+
+  @Override
+  protected boolean isSleepNeeded()
+  {
+    return !this.errorLogObserver.hasError();
   }
 }
